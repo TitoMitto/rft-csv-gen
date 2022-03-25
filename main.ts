@@ -13,33 +13,33 @@ program
   .option("-o --output", "Define the output path")
   .parse(Deno.args);
 
-
 if (program.input) {
   let data = "ORDER ID, FS NUMBER, CUSTOMER, DATE\n";
 
-  if(program.input.endsWith(".rtf")){
+  if (program.input.endsWith(".rtf")) {
     const fileContents = await Deno.readTextFile(`${program.input}`);
     data = generateText(fileContents, data);
-  } else{ 
+  } else {
     for await (const dirEntry of Deno.readDir(program.input)) {
-        if (dirEntry.isFile && dirEntry.name.endsWith(".rtf")) {
-          const fileContents = await Deno.readTextFile(`${program.input}/${dirEntry.name}`);
-          data =generateText(fileContents, data)
-        }
+      if (dirEntry.isFile && dirEntry.name.endsWith(".rtf")) {
+        const fileContents = await Deno.readTextFile(
+          `${program.input}/${dirEntry.name}`,
+        );
+        data = generateText(fileContents, data);
       }
+    }
   }
-  
+
   await Deno.writeTextFile(`${program.output ?? "output"}.csv`, data);
 }
 
+function generateText(fileContents: string, data: string) {
+  const matches = fileContents.matchAll(
+    /FS\sNo.(.+?)\s*DATE:\s(.*)\n*.*\n*\n*(Customers\sTIN.*)?\n*Customer:\s(.*)\nRef:\s(.*)/g,
+  );
 
-function generateText(fileContents: string, data:string){
-    const matches = fileContents.matchAll(
-        /FS\sNo.(.+?)\s*DATE:\s(.*)\n*.*\n*\n*(Customers\sTIN.*)?\n*Customer:\s(.*)\nRef:\s(.*)/g,
-      );
-
-      for (const x of matches) {
-        data += `${x[5]}, ${x[1]}, ${x[4]}, ${x[2]}\n`;
-      }
-      return data;
+  for (const x of matches) {
+    data += `${x[5]}, ${x[1]}, ${x[4]}, ${x[2]}\n`;
+  }
+  return data;
 }
